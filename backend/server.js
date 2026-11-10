@@ -1,41 +1,138 @@
 
 const cors = require("cors");
+const express = require("express");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+
 require("dotenv").config();
 
-const express = require("express");
-const { randomUUID } = require("crypto");
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+    console.error("JWT_SECRET is missing or too short. Use at least 32 characters.");
+    process.exit(1);
+}
+
+if (!process.env.METRICS_USERNAME || !process.env.METRICS_PASSWORD) {
+    console.error("Metrics username or password is missing from .env");
+    process.exit(1);
+}
+
 const connectDB = require("./config/db");
 const Task = require("./models/Task");
+const authRoutes = require("./routes/authRoutes");
+const authMiddleware = require("./middleware/authMiddleware");
 
-const app = express();
 const client = require("@prometheus-io/client");
 
+const app = express();
 const register = new client.Registry();
 
-client.collectDefaultMetrics({ register });
 const PORT = process.env.PORT || 5000;
 
-// Middleware
+// =====================================
+// PROMETHEUS CONFIGURATION
+// =====================================
+
+client.collectDefaultMetrics({ register });
+
+// =====================================
+// METRICS AUTHENTICATION
+// =====================================
+
+const metricsAuth = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Basic ")) {
+        res.set("WWW-Authenticate", 'Basic realm="Prometheus Metrics"');
+        return res.status(401).send("Authentication required");
+    }
+
+    const credentials = Buffer.from(
+        authHeader.split(" ")[1],
+        "base64"
+    ).toString("utf8");
+
+    const separator = credentials.indexOf(":");
+
+    if (separator === -1) {
+        return res.status(401).send("Invalid credentials");
+    }
+
+    const username = credentials.slice(0, separator);
+    const password = credentials.slice(separator + 1);
+
+    if (
+        username !== process.env.METRICS_USERNAME ||
+        password !== process.env.METRICS_PASSWORD
+    ) {
+        return res.status(401).send("Invalid credentials");
+    }
+
+    next();
+};
+
+// =====================================
+// RATE LIMITER
+// =====================================
+
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 10,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    message: {
+        message: "Too many authentication attempts. Please try again later."
+    }
+});
+
+// =====================================
+// SECURITY MIDDLEWARE
+// =====================================
+
+app.use(helmet());
+
 app.use(cors({
     origin: [
         "http://localhost:5173",
         "http://localhost:8080"
-    ]
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: "10kb" }));
 
-app.get("/metrics", async (req, res) => {
-  res.set("Content-Type", register.contentType);
-  res.end(await register.metrics());
+// =====================================
+// AUTHENTICATION ROUTES
+// =====================================
+
+app.use("/auth", authLimiter, authRoutes);
+
+// =====================================
+// PROMETHEUS METRICS
+// =====================================
+
+app.get("/metrics", metricsAuth, async (req, res) => {
+    try {
+        res.set("Content-Type", register.contentType);
+        res.end(await register.metrics());
+    } catch (error) {
+        console.error("Metrics error:", error.message);
+        res.status(500).send("Unable to retrieve metrics");
+    }
 });
 
+// =====================================
 // HOME ROUTE
+// =====================================
+
 app.get("/", (req, res) => {
     res.send("Welcome to Task Manager Backend!");
 });
 
+// =====================================
 // HEALTH CHECK
+// =====================================
+
 app.get("/health", (req, res) => {
     res.status(200).json({
         status: "OK",
@@ -43,8 +140,11 @@ app.get("/health", (req, res) => {
     });
 });
 
+// =====================================
 // CREATE TASK
-app.post("/tasks", async (req, res) => {
+// =====================================
+
+app.post("/tasks", authMiddleware, async (req, res) => {
     try {
         const { title } = req.body;
 
@@ -55,7 +155,8 @@ app.post("/tasks", async (req, res) => {
         }
 
         const newTask = await Task.create({
-            title: title.trim()
+            title: title.trim(),
+            user: req.userId
         });
 
         res.status(201).json({
@@ -64,14 +165,22 @@ app.post("/tasks", async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error("Create task error:", error.message);
+        res.status(500).json({
+            message: "Failed to create task"
+        });
     }
 });
 
+// =====================================
 // READ ALL TASKS
-app.get("/tasks", async (req, res) => {
+// =====================================
+
+app.get("/tasks", authMiddleware, async (req, res) => {
     try {
-        const tasks = await Task.find();
+        const tasks = await Task.find({
+            user: req.userId
+        });
 
         res.status(200).json({
             count: tasks.length,
@@ -79,14 +188,23 @@ app.get("/tasks", async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error("Fetch tasks error:", error.message);
+        res.status(500).json({
+            message: "Failed to fetch tasks"
+        });
     }
 });
 
+// =====================================
 // READ SINGLE TASK
-app.get("/tasks/:id", async (req, res) => {
+// =====================================
+
+app.get("/tasks/:id", authMiddleware, async (req, res) => {
     try {
-        const task = await Task.findById(req.params.id);
+        const task = await Task.findOne({
+            _id: req.params.id,
+            user: req.userId
+        });
 
         if (!task) {
             return res.status(404).json({
@@ -97,12 +215,17 @@ app.get("/tasks/:id", async (req, res) => {
         res.status(200).json(task);
 
     } catch (error) {
-        res.status(400).json({ message: "Invalid task ID" });
+        res.status(400).json({
+            message: "Invalid task ID"
+        });
     }
 });
 
+// =====================================
 // UPDATE TASK
-app.put("/tasks/:id", async (req, res) => {
+// =====================================
+
+app.put("/tasks/:id", authMiddleware, async (req, res) => {
     try {
         const { title, completed } = req.body;
 
@@ -116,8 +239,11 @@ app.put("/tasks/:id", async (req, res) => {
             });
         }
 
-        const updatedTask = await Task.findByIdAndUpdate(
-            req.params.id,
+        const updatedTask = await Task.findOneAndUpdate(
+            {
+                _id: req.params.id,
+                user: req.userId
+            },
             {
                 title: title.trim(),
                 completed
@@ -140,16 +266,22 @@ app.put("/tasks/:id", async (req, res) => {
         });
 
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(400).json({
+            message: "Invalid task ID"
+        });
     }
 });
 
+// =====================================
 // DELETE TASK
-app.delete("/tasks/:id", async (req, res) => {
+// =====================================
+
+app.delete("/tasks/:id", authMiddleware, async (req, res) => {
     try {
-        const deletedTask = await Task.findByIdAndDelete(
-            req.params.id
-        );
+        const deletedTask = await Task.findOneAndDelete({
+            _id: req.params.id,
+            user: req.userId
+        });
 
         if (!deletedTask) {
             return res.status(404).json({
@@ -163,18 +295,23 @@ app.delete("/tasks/:id", async (req, res) => {
         });
 
     } catch (error) {
-        res.status(400).json({ message: "Invalid task ID" });
+        res.status(400).json({
+            message: "Invalid task ID"
+        });
     }
 });
 
-// START SERVER AFTER DATABASE CONNECTION
+// =====================================
+// START SERVER
+// =====================================
+
 const startServer = async () => {
     try {
         await connectDB();
 
         app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on port ${PORT}`);
-});
+            console.log(`Server running on port ${PORT}`);
+        });
 
     } catch (error) {
         console.error("Server startup failed:", error.message);

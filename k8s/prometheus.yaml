@@ -1,3 +1,4 @@
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -24,10 +25,16 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /etc/prometheus
+            - name: metrics-auth
+              mountPath: /etc/prometheus/secrets
+              readOnly: true
       volumes:
         - name: config
           configMap:
             name: prometheus-config
+        - name: metrics-auth
+          secret:
+            secretName: prometheus-metrics-auth
 
 ---
 apiVersion: v1

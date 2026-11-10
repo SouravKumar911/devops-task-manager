@@ -25,3 +25,5 @@ Thumbs.db
 *.tfstate
 *.tfstate.*
 crash.log
+grafana-backup.db
+k8s/grafana-restore.yaml

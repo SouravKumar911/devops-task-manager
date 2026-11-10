@@ -1,7 +1,6 @@
 
 const mongoose = require("mongoose");
 
-// Define the structure of a Task
 const taskSchema = new mongoose.Schema(
     {
         title: {
@@ -13,6 +12,12 @@ const taskSchema = new mongoose.Schema(
         completed: {
             type: Boolean,
             default: false
+        },
+
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true
         }
     },
     {
@@ -20,7 +25,4 @@ const taskSchema = new mongoose.Schema(
     }
 );
 
-// Create and export the Task model
-const Task = mongoose.model("Task", taskSchema);
-
-module.exports = Task;
+module.exports = mongoose.model("Task", taskSchema);

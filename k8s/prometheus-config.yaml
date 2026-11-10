@@ -1,3 +1,4 @@
+
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -15,5 +16,9 @@ data:
 
       - job_name: "task-manager-backend"
         metrics_path: /metrics
+        scrape_interval: 15s
+        basic_auth:
+          username_file: /etc/prometheus/secrets/username
+          password_file: /etc/prometheus/secrets/password
         static_configs:
           - targets: ["task-manager-backend-service.default.svc.cluster.local:5000"]
