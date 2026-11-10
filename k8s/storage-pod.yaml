@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: storage-test-pod
+spec:
+  containers:
+    - name: nginx
+      image: nginx:alpine
+      volumeMounts:
+        - name: task-storage
+          mountPath: /usr/share/nginx/html/storage
+
+  volumes:
+    - name: task-storage
+      persistentVolumeClaim:
+        claimName: task-manager-pvc
