@@ -93,7 +93,8 @@ app.use(helmet());
 app.use(cors({
     origin: [
         "http://localhost:5173",
-        "http://localhost:8080"
+        "http://localhost:8080",
+        "https://devops-task-manager-ebon.vercel.app"
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"]
