@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: task-manager-backend:v3
+          image: task-manager-backend:v4
           imagePullPolicy: Never
           ports:
             - containerPort: 5000

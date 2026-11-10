@@ -8,6 +8,11 @@ const connectDB = require("./config/db");
 const Task = require("./models/Task");
 
 const app = express();
+const client = require("@prometheus-io/client");
+
+const register = new client.Registry();
+
+client.collectDefaultMetrics({ register });
 const PORT = process.env.PORT || 5000;
 
 // Middleware
@@ -19,6 +24,11 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+app.get("/metrics", async (req, res) => {
+  res.set("Content-Type", register.contentType);
+  res.end(await register.metrics());
+});
 
 // HOME ROUTE
 app.get("/", (req, res) => {

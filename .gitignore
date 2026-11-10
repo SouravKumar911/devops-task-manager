@@ -7,6 +7,7 @@ backend/node_modules/
 .env
 .env.*
 !.env.example
+dist/
 
 # Build files
 frontend/dist/
@@ -18,3 +19,9 @@ backend/dist/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
