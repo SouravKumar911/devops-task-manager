@@ -48,7 +48,6 @@ function Auth({ onLogin }) {
     return (
         <div className="auth-page">
             <div className="auth-shell">
-
                 <section className="auth-brand-panel">
                     <div className="brand-logo">
                         <span className="brand-logo-icon">✓</span>

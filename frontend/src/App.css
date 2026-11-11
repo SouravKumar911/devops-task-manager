@@ -792,3 +792,211 @@
         font-size: 11px;
     }
 }
+
+
+/* ========================================
+   IMPROVED RESPONSIVE AUTHENTICATION
+   ======================================== */
+
+.auth-page,
+.auth-page * {
+    box-sizing: border-box;
+}
+
+.auth-submit {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Tablet and mobile */
+@media (max-width: 800px) {
+    .auth-page {
+        min-height: 100vh;
+        padding: 24px 18px;
+        align-items: center;
+    }
+
+    .auth-shell {
+        width: 100%;
+        max-width: 500px;
+        min-height: auto;
+        grid-template-columns: 1fr;
+        border-radius: 22px;
+    }
+
+    /* Keep branding visible as a compact header */
+    .auth-brand-panel {
+        display: flex;
+        min-height: auto;
+        padding: 25px 28px 27px;
+        justify-content: flex-start;
+        border-radius: 0;
+    }
+
+    .brand-logo {
+        font-size: 21px;
+    }
+
+    .brand-logo-icon {
+        width: 35px;
+        height: 35px;
+        border-radius: 10px;
+        font-size: 22px;
+    }
+
+    .brand-content {
+        max-width: 100%;
+        margin: 22px 0 0;
+    }
+
+    .brand-eyebrow {
+        font-size: 10px;
+        letter-spacing: 1.6px;
+    }
+
+    .brand-content h1 {
+        margin: 10px 0 8px;
+        font-size: clamp(27px, 6vw, 36px);
+        line-height: 1.2;
+        letter-spacing: -1px;
+    }
+
+    .brand-content > p {
+        max-width: 390px;
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    /* Hide decorative content to keep the header compact */
+    .brand-features,
+    .brand-footer,
+    .auth-mobile-logo {
+        display: none;
+    }
+
+    .auth-form-panel {
+        width: 100%;
+        padding: 32px 30px 30px;
+    }
+
+    .auth-card {
+        width: 100%;
+        max-width: 420px;
+    }
+
+    .auth-heading {
+        margin-bottom: 27px;
+    }
+
+    .auth-heading h2 {
+        font-size: 27px;
+    }
+
+    .auth-field {
+        margin-bottom: 19px;
+    }
+}
+
+/* Smaller phones */
+@media (max-width: 480px) {
+    .auth-page {
+        padding: 14px;
+        align-items: flex-start;
+    }
+
+    .auth-shell {
+        max-width: 100%;
+        border-radius: 18px;
+    }
+
+    .auth-brand-panel {
+        padding: 22px 21px 23px;
+    }
+
+    .brand-content {
+        margin-top: 19px;
+    }
+
+    .brand-content h1 {
+        font-size: 29px;
+    }
+
+    .brand-content > p {
+        font-size: 12px;
+        line-height: 1.55;
+    }
+
+    .auth-form-panel {
+        padding: 27px 21px 25px;
+    }
+
+    .auth-heading {
+        margin-bottom: 24px;
+    }
+
+    .auth-heading h2 {
+        font-size: 24px;
+        letter-spacing: -0.5px;
+    }
+
+    .auth-heading p {
+        font-size: 12px;
+    }
+
+    .auth-field input {
+        height: 49px;
+        font-size: 14px;
+    }
+
+    .auth-submit {
+        height: 50px;
+    }
+
+    .auth-divider {
+        margin: 22px 0;
+    }
+
+    .auth-switch-text {
+        font-size: 12px;
+        line-height: 1.8;
+    }
+
+    .auth-switch {
+        font-size: 12px;
+    }
+
+    .auth-terms {
+        margin-top: 23px;
+    }
+}
+
+/* Very narrow phones */
+@media (max-width: 360px) {
+    .auth-page {
+        padding: 8px;
+    }
+
+    .auth-brand-panel {
+        padding: 19px 17px 21px;
+    }
+
+    .auth-form-panel {
+        padding: 24px 17px;
+    }
+
+    .brand-content h1 {
+        font-size: 26px;
+    }
+
+    .auth-heading h2 {
+        font-size: 22px;
+    }
+}
+
+/* Short mobile screens */
+@media (max-height: 700px) and (max-width: 800px) {
+    .auth-page {
+        align-items: flex-start;
+    }
+}
+
